@@ -1,8 +1,8 @@
 import cv2
 import matplotlib.pyplot as plt
 
-
-def plot_gray(input_image, output_image):  # **not using**
+# **NOT USING FIRST FUNCTION**
+def plot_gray(input_image, output_image):  
     """
     Converts an image from BGR to RGB and plots
     """
@@ -29,7 +29,7 @@ def filter_img(img_path):
 
     #cv2.waitKey(0)
     #cv2.destroyAllWindows()
-    return(equ)
+    return(equ, img)
     
 if __name__ == '__main__':
     main()
