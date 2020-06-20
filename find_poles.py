@@ -326,7 +326,7 @@ def touch_up(first_pole, second_pole, horizontal, orig_img, confidence):
 	if horizontal != []:
 		cv2.circle(orig_img, (ext1[0], ext1[1]), 5, (255,255,255), 4)
 		cv2.circle(orig_img, (ext2[0], ext2[1]), 5, (255,255,255), 4)
-	elif synth_horizontal != []:
+	elif len(synth_horizontal) == 4:
 		cv2.circle(orig_img, (synth_horizontal[0], synth_horizontal[1]), 5, (255,255,255), 4)
 		cv2.circle(orig_img, (synth_horizontal[2], synth_horizontal[3]), 5, (255,255,255), 4)
 
