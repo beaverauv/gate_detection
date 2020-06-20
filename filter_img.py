@@ -24,8 +24,10 @@ def filter_img(img_path):
     # grayscale image is used for equalization
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     # following function performs equalization on input image
+    
+    #equ = cv2.Canny(gray)
     equ = cv2.equalizeHist(gray)
-    cv2.imshow("end", equ)
+    #cv2.imshow("end", equ)
 
     #cv2.waitKey(0)
     #cv2.destroyAllWindows()
