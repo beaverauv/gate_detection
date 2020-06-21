@@ -17,8 +17,9 @@ def plot_gray(input_image, output_image):
     #plt.savefig('03_histogram_equalized.png')
     #plt.show()
 
-def filter_img(img_path):
-    print(img_path)
+def filter_img(img_path, debug):
+    if debug == True:
+        print(img_path)
     # read an image
     img = cv2.imread(img_path)
     # grayscale image is used for equalization
