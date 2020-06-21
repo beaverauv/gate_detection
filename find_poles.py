@@ -5,23 +5,19 @@ from filter_img import *
 from slope import *
 
 
-def find_and_narrow_down_lines(img, dis_factor):
+def find_and_narrow_down_lines(img, dis_factor, debug):
 	# cvt to gray if not already
 	img_gray = img
-	#img_gray = cv2.cvtColor(img, cv2.COLOR_GRAY2BGR)
-	#img_gray = cv2.cvtColor(img_gray, cv2.COLOR_BGR2GRAY)
-	cv2.imshow("gray", img_gray)
 	
 	# blur img
 	img_blur = cv2.bilateralFilter(img_gray, 9, 75, 75)
 
 	# run canny from blur
 	img_cannyblur = cv2.Canny(img_blur, 50,150, apertureSize=3)
-	cv2.imshow("blur", img_cannyblur)
 
 	# run canny from gray (no blur)
 	img_canny = cv2.Canny(img_gray, 50,150, apertureSize=3)
-	cv2.imshow("canny", img_canny)
+	
 
 	# find lines in  x1/y1/x2/y2
 	lines = cv2.HoughLinesP(img_canny, rho = 1, theta = 1*np.pi/180, threshold = 20, lines = 1, minLineLength = 100, maxLineGap = 15)
@@ -29,7 +25,14 @@ def find_and_narrow_down_lines(img, dis_factor):
 	# if no lines found
 	if lines is None:
 		cv2.imshow("detection", img)
-		return("No lines detected")
+		sys.exit("Error: no lines detected")
+
+	if debug == True:
+		cv2.imshow("gray", img_gray)
+		cv2.imshow("blur", img_blur)
+		cv2.imshow("cannyblur", img_cannyblur)
+		cv2.imshow("canny", img_canny)
+
 
 	# make coordantes lists
 	x1_list = []
@@ -52,46 +55,47 @@ def find_and_narrow_down_lines(img, dis_factor):
 		sys.exit()
 
 	# put coordnates into list
-	print("start x1_list: " + str(x1_list))
+	if debug == True:
+		print("start x1_list: " + str(x1_list))
 	# check for and delete lines that are similar (start and end are very close)
 	counter = 0
 	for frist_coor in x1_list:
-		# print("counter: " + str(counter))
-		# print("current frist_coor: " + str(frist_coor))
-		#print("current x1_list: " + str(x1_list))
 		for second_coor in x1_list:
 			if counter <= len(x1_list):
-				# print("current second_coor: " + str(second_coor))
-				# print("counter: " + str(counter) + "; len(x1_list): " + str(len(x1_list)))
-				#print("comparing " + str(frist_coor) + " with " + str(second_coor))
 				if abs(frist_coor - second_coor) <= dis_factor and abs(frist_coor - second_coor) != 0: 
 					del x1_list[counter]
 					del y1_list[counter]
 					del x2_list[counter]
 					del y2_list[counter]
-					#print("Deleted " + str(frist_coor) + " because " + str(frist_coor) + " - " + str(second_coor) + " is equal to " + str(frist_coor - second_coor))
-				#else: 
-					#print("Did not delete " + str(frist_coor) + " because " + str(frist_coor) + " - " + str(second_coor) + " is equal to " + str(frist_coor - second_coor))
-					
 			counter = counter + 1
 		counter = 0
 	
 	# print final list of coordantes without repeats
-	print("final x1_list without repeats: " + str(x1_list))
-	cv2.imshow("orig_img", orig_img)
+	if debug == True:
+		print("final x1_list without repeats: " + str(x1_list))
+		#cv2.imshow("orig_img", orig_img)
 
+	"""
+	temp_img = orig_img
+	for coord in range(len(x1_list)):
+		cv2.line(temp_img, (x1_list[coord],y1_list[coord]),(x2_list[coord],y2_list[coord]),(0,0,157),1) # some lime green color
+	if debug == True:
+		cv2.imshow("initial line detections", temp_img)
+	"""
 	
 	return(len(x1_list), orig_len, img, x1_list, y1_list, x2_list, y2_list)
 
-def find_poles(x1_list, y1_list, x2_list, y2_list):
+
+def find_poles(x1_list, y1_list, x2_list, y2_list, debug):
 	# store pole locs in x1/y1/x2/y2 order each in own list
 	first_pole = [] 
 	second_pole = [] 
 	counter = 0
 	found = False
+	pole_slope = 40
 
 	for line in range(len(x1_list)):
-		if abs(x1_list[counter] - x2_list[counter]) < 15: # essentially if the line is verticle (or close to it)
+		if abs(x1_list[counter] - x2_list[counter]) < pole_slope: # essentially if the line is verticle (or close to it)
 			if found == False: # counter just counts to see if one pole has already been found
 				first_pole.append(x1_list[counter])
 				first_pole.append(y1_list[counter])
@@ -121,12 +125,13 @@ def find_poles(x1_list, y1_list, x2_list, y2_list):
 
 				counter = counter - 1 # because list length has been shortened
 		counter = counter + 1
-
-	print("first_pole: " + str(first_pole))
-	print("second_pole: " + str(second_pole))
+	if debug == True:
+		print("first_pole: " + str(first_pole))
+		print("second_pole: " + str(second_pole))
 	return(first_pole, second_pole, x1_list, y1_list, x2_list, y2_list)
 
-def check_reflection(first_pole, second_pole):
+
+def check_reflection(first_pole, second_pole, debug):
 	# check for reflection
 	reflection = []
 	if first_pole != [] and second_pole != []: # if both poles have been found
@@ -150,19 +155,22 @@ def check_reflection(first_pole, second_pole):
 			else:
 				reflection = second_pole
 				second_pole = []
-	else: 
-		print("No reflection without both poles found")
+	else:
+		if debug == True: 
+			print("No reflection without both poles found")
 
 	return(first_pole, second_pole, reflection)
 
-def find_horizontal(x1_list, y1_list, x2_list, y2_list, refined_slopes, first_pole, second_pole):
+
+def find_horizontal(x1_list, y1_list, x2_list, y2_list, refined_slopes, first_pole, second_pole, debug):
 	horizontal = []
 	
 	if first_pole == [] or second_pole == []: # only works if both poles are found
 		return(horizontal)
 
-	print("x1_list: " + str(x1_list))
-	print("x2_list: " + str(x2_list))
+	if debug == True:
+		print("x1_list: " + str(x1_list))
+		print("x2_list: " + str(x2_list))
 	
 	for line in range(len(x1_list)): # since you don't know where the x1/x2 is in the image, this tests all options
 		if abs(x1_list[line] - first_pole[0]) < 15 and abs(x1_list[line] - first_pole[0]) != 0:
@@ -194,7 +202,8 @@ def find_horizontal(x1_list, y1_list, x2_list, y2_list, refined_slopes, first_po
 			del y2_list[line]
 			return(horizontal)
 
-def touch_up(first_pole, second_pole, horizontal, orig_img, confidence):
+
+def touch_up(first_pole, second_pole, horizontal, orig_img, confidence, debug):
 	ext_percent = 0
 	# if one pole is found (under first_pole) make pole_missing = to 1, if both missing = 0 or if both found = 2
 	if second_pole == []:
@@ -205,11 +214,10 @@ def touch_up(first_pole, second_pole, horizontal, orig_img, confidence):
 	else:
 		pole_missing = 2
 		
-		
 	# figure out which x1/x2 // y1/y2 is on top
 	if pole_missing > 0:
 		if len(first_pole) != 0:
-			if first_pole[0] < first_pole[2]:
+			if first_pole[1] < first_pole[3]:
 				first1_top = True
 			else:
 				first1_top = False
@@ -217,7 +225,7 @@ def touch_up(first_pole, second_pole, horizontal, orig_img, confidence):
 
 		if pole_missing > 1: # 
 			if len(second_pole) != 0:
-				if second_pole[0] < second_pole[2]:
+				if second_pole[1] < second_pole[3]:
 					second1_top = True
 				else:
 					second1_top = False
@@ -231,8 +239,6 @@ def touch_up(first_pole, second_pole, horizontal, orig_img, confidence):
 	else:
 		sys.exit("Error: no poles")
 
-
-	
 	synth_horizontal = []
 	if horizontal == []: # if no horizontal was found, predict one 
 		if pole_missing > 0:
@@ -250,8 +256,8 @@ def touch_up(first_pole, second_pole, horizontal, orig_img, confidence):
 				else:
 					synth_horizontal.append(second_pole[2])
 					synth_horizontal.append(second_pole[3])
-
-				print("synth_horizontal: " + str(synth_horizontal))
+				if debug == True:
+					print("synth_horizontal: " + str(synth_horizontal))
 				cv2.line(orig_img, (synth_horizontal[0],synth_horizontal[1]),(synth_horizontal[2],synth_horizontal[3]),(177,237,157),2) # some lime green color
 
 				ext_len = line_length(synth_horizontal)
@@ -356,7 +362,6 @@ def confidence(x1_list, y1_list, x2_list, y2_list, refined_slopes, first_pole, s
 	elif len(horizontal) == 4:
 		confidence = confidence + 0.35
 
-
 	counter = 0
 	for coord in horizontal:
 		if counter == 0:
@@ -372,8 +377,7 @@ def confidence(x1_list, y1_list, x2_list, y2_list, refined_slopes, first_pole, s
 			if horizontal[counter] in y2_list:
 				confidence = confidence + 0.2
 		counter = counter + 1
-
-			
+		
 	if confidence > 1:
 		confidence = 1
 	elif confidence < 0:
@@ -393,43 +397,51 @@ def confidence(x1_list, y1_list, x2_list, y2_list, refined_slopes, first_pole, s
 
 # make sure terminal line that calls this script has the right number of contents
 if len(sys.argv) != 3:
-		print("This test requires arguements: python test2.py [path_to_image (string)] max_distance_for_similar_lines(int)") # orig:  also had [debug (bool)]"
+		print("This script requires arguements: python3 [file_name.py] [path_to_image (string)] [debug(T/F)]") 
 		print("Exiting...")
 		sys.exit()
+# sys.argv is a list ['this_file.py', 'img.jpg', debug(T/F)] should be the the items
 
-# sys.argv is a list ['this_file.py', 'img.jpg', max_distance_for_similar_lines(int)] should be the the items
+if sys.argv[2] == "True":
+	debug = True
+else:
+	debug = False
+img, orig_img = filter_img(sys.argv[1], debug)
+dis_factor = 25
 
-img, orig_img = filter_img(sys.argv[1])
-dis_factor = int(sys.argv[2])
-
-num_poles, orig_len, img_w_lines, x1_list, y1_list, x2_list, y2_list = find_and_narrow_down_lines(img, dis_factor)
-print("there were origionally " + str(orig_len) + " line(s) found.")
-print("number of lines found (may overlap): " + str(num_poles))
+num_poles, orig_len, img_w_lines, x1_list, y1_list, x2_list, y2_list = find_and_narrow_down_lines(img, dis_factor, debug)
+if debug == True:
+	print("there were origionally " + str(orig_len) + " line(s) found.")
+	print("number of lines found (may overlap): " + str(num_poles))
 
 # find all slopes
 all_slopes = find_slopes_multiline(x1_list, y1_list, x2_list, y2_list)
-print("original slopes: " + str(all_slopes))
+if debug == True:
+	print("original slopes: " + str(all_slopes))
 
 # get rid of slopes that don't have a ~ paralell partner(s)
-refined_slopes, x1_list, y1_list, x2_list, y2_list = elim_from_slope(all_slopes, x1_list, y1_list, x2_list, y2_list)
-print("refined slopes: " + str(refined_slopes))
+refined_slopes, x1_list, y1_list, x2_list, y2_list = elim_from_slope(all_slopes, x1_list, y1_list, x2_list, y2_list, debug)
+if debug == True:
+	print("refined slopes: " + str(refined_slopes))
 
 # find pole locations
-first_pole, second_pole, x1_list, y1_list, x2_list, y2_list = find_poles(x1_list, y1_list, x2_list, y2_list) 
+first_pole, second_pole, x1_list, y1_list, x2_list, y2_list = find_poles(x1_list, y1_list, x2_list, y2_list, debug) 
 # list where the first two itemas are the pole coordnates and the third is a horizontal bar
 
 # check for refelction
-first_pole, second_pole, reflection = check_reflection(first_pole, second_pole)
+first_pole, second_pole, reflection = check_reflection(first_pole, second_pole, debug)
 
-if reflection == []:
-	print("No reflection found")
-else: 
-	print("reflection: " + str(reflection))
+if debug == True:
+	if reflection == []:
+		print("No reflection found")
+	else: 
+		print("reflection: " + str(reflection))
 
 # find horizontal bar
-horizontal = find_horizontal(x1_list, y1_list, x2_list, y2_list, refined_slopes, first_pole, second_pole)
-print("horizontal: " + str(horizontal))
-cv2.imshow("orig_img", orig_img)
+horizontal = find_horizontal(x1_list, y1_list, x2_list, y2_list, refined_slopes, first_pole, second_pole, debug)
+if debug == True:
+	print("horizontal: " + str(horizontal))
+	cv2.imshow("orig_img", orig_img)
 
 """ SHOWS ROUGH DETECTION
 # add lines to image
@@ -444,7 +456,7 @@ if horizontal != []:
 
 cv2.imshow("rough detection", orig_img)
 """
-final, ext_percent, first_pole, second_pole = touch_up(first_pole, second_pole, horizontal, orig_img, confidence)
+final, ext_percent, first_pole, second_pole = touch_up(first_pole, second_pole, horizontal, orig_img, confidence, debug)
 
 # add lines to image # FIS THIS NEW IMG VARIABLE
 if first_pole != []:
@@ -459,6 +471,10 @@ if horizontal != []:
 
 # determaine confidence
 confidence = confidence(x1_list, y1_list, x2_list, y2_list, refined_slopes, first_pole, second_pole, ext_percent)
+
+if debug == True:
+	print("first_pole: " + str(first_pole))
+	print("second_pole: " + str(second_pole))
 
 cv2.imshow("final detection - " + str(confidence), final)
 
