@@ -22,19 +22,16 @@ def find_slope_singleline(line): # where a is a list of four elements (x1/y1/x2/
 
     return(slope)
 
-def elim_from_slope(slopes, x1_list, y1_list, x2_list, y2_list):
+def elim_from_slope(slopes, x1_list, y1_list, x2_list, y2_list, debug):
     counter = 0
-    print("total slopes: " + str(slopes))
+    if debug == True:
+        print("total slopes: " + str(slopes))
     for slope in range(len(slopes)):
-        #print("asessing: " + str(slopes[counter]) + " at index " + str(counter))
-        #print(slopes)
         if abs(slopes[counter]) in range(1, 10):
             if abs(slopes[counter]) == float('inf'):
-                #print(str(slopes[counter]) + " is inf")
                 counter = counter + 1
                 break
             else:
-                #print("deleting " + str(slopes[counter]) + " at index " + str(counter)+ " because its too big/small")
                 del slopes[counter]
                 del x1_list[counter]
                 del y1_list[counter]
@@ -42,7 +39,6 @@ def elim_from_slope(slopes, x1_list, y1_list, x2_list, y2_list):
                 del y2_list[counter]
         else: 
             counter = counter + 1
-            #print("counter incremented")
 
     return(slopes, x1_list, y1_list, x2_list, y2_list)
 
