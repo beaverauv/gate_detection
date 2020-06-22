@@ -1,4 +1,4 @@
-from math import log10, floor
+import math
 import numpy as np
 
 def find_slopes_multiline(x1, y1, x2, y2): # where each x1/y1/x2/y2 are parallel lists
@@ -48,6 +48,13 @@ def line_intersection(one_list, two_list):
     one_slope = find_slope_singleline(one_list)
     two_slope = find_slope_singleline(two_list)
 
+    if math.isinf(float(one_slope)):
+        one_slope = 100000 # because it can not compute inf but a big number is fine too
+
+    if math.isinf(float(two_slope)):
+        two_slope = 100000 # because it can not compute inf but a big number is fine too
+
+
     # calculate y-intercepts
     one_b=one_list[1]-one_slope*one_list[0]
     two_b=two_list[1]-two_slope*two_list[0]
@@ -57,9 +64,17 @@ def line_intersection(one_list, two_list):
     x_intersect = (two_b - one_b) / sum_slope
     y_intersect = (two_slope * x_intersect) + two_b
 
+    print("one_slope:" + str(one_slope))
+    print("two_slope:" + str(two_slope))
+    print("one_b:" + str(one_b))
+    print("two_b:" + str(two_b))
+    print("sum_slope:" + str(sum_slope))
+    print("x_intersect:" + str(x_intersect))
+    print("y_intersect:" + str(y_intersect))
+
     x_intersect = int(x_intersect)
     y_intersect = int(y_intersect)
-
+    
     # add to intersect list
     intersect.append(x_intersect)
     intersect.append(y_intersect)
