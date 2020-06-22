@@ -3,6 +3,7 @@ import cv2
 import numpy as np
 from filter_img import *
 from slope import *
+import math
 
 
 def find_and_narrow_down_lines(img, dis_factor, debug):
@@ -205,12 +206,13 @@ def find_horizontal(x1_list, y1_list, x2_list, y2_list, refined_slopes, first_po
 
 def touch_up(first_pole, second_pole, horizontal, orig_img, confidence, debug):
 	ext_percent = 0
+	center = None
 	# if one pole is found (under first_pole) make pole_missing = to 1, if both missing = 0 or if both found = 2
 	if second_pole == []:
 		pole_missing = 1
 		if first_pole == []:
 			pole_missing = pole_missing - 1
-			return(orig_img, ext_percent, first_pole, second_pole)
+			return(orig_img, ext_percent, first_pole, second_pole, center)
 	else:
 		pole_missing = 2
 		
@@ -223,7 +225,7 @@ def touch_up(first_pole, second_pole, horizontal, orig_img, confidence, debug):
 				first1_top = False
 
 
-		if pole_missing > 1: # 
+		if pole_missing > 1: 
 			if len(second_pole) != 0:
 				if second_pole[1] < second_pole[3]:
 					second1_top = True
@@ -270,31 +272,32 @@ def touch_up(first_pole, second_pole, horizontal, orig_img, confidence, debug):
 	elif len(horizontal) == 4:
 		
 		first_pole_horz_intersect = line_intersection(first_pole, horizontal)
+		print(first_pole_horz_intersect)
 		second_pole_horz_intersect = line_intersection(second_pole, horizontal)
 		
 		ext1 = []
 		ext2 = []
 
 		if horz1_left == True:
-			ext1.append(first_pole_horz_intersect[0])
-			ext1.append(first_pole_horz_intersect[1])
-			ext1.append(horizontal[0])
-			ext1.append(horizontal[1])
+			ext1.append(int(first_pole_horz_intersect[0]))
+			ext1.append(int(first_pole_horz_intersect[1]))
+			ext1.append(int(horizontal[0]))
+			ext1.append(int(horizontal[1]))
 
-			ext2.append(second_pole_horz_intersect[0])
-			ext2.append(second_pole_horz_intersect[1])
-			ext2.append(horizontal[2])
-			ext2.append(horizontal[3])
+			ext2.append(int(second_pole_horz_intersect[0]))
+			ext2.append(int(second_pole_horz_intersect[1]))
+			ext2.append(int(horizontal[2]))
+			ext2.append(int(horizontal[3]))
 		else:
-			ext1.append(first_pole_horz_intersect[0])
-			ext1.append(first_pole_horz_intersect[1])
-			ext1.append(horizontal[2])
-			ext1.append(horizontal[3])
+			ext1.append(int(first_pole_horz_intersect[0]))
+			ext1.append(int(first_pole_horz_intersect[1]))
+			ext1.append(int(horizontal[2]))
+			ext1.append(int(horizontal[3]))
 
-			ext2.append(second_pole_horz_intersect[0])
-			ext2.append(second_pole_horz_intersect[1])
-			ext2.append(horizontal[0])
-			ext2.append(horizontal[1])
+			ext2.append(int(second_pole_horz_intersect[0]))
+			ext2.append(int(second_pole_horz_intersect[1]))
+			ext2.append(int(horizontal[0]))
+			ext2.append(int(horizontal[1]))
 
 		if first1_top == True:
 			first_pole[0] = ext1[0]
@@ -336,7 +339,74 @@ def touch_up(first_pole, second_pole, horizontal, orig_img, confidence, debug):
 		cv2.circle(orig_img, (synth_horizontal[0], synth_horizontal[1]), 5, (255,255,255), 4)
 		cv2.circle(orig_img, (synth_horizontal[2], synth_horizontal[3]), 5, (255,255,255), 4)
 
-	return(orig_img, ext_percent, first_pole, second_pole)
+	if first_pole != [] and second_pole != []:
+		# calculate center of first_pole
+		first_pole_mid = []
+		first_pole_mid.append(float(first_pole[0] + first_pole[2])/2)
+		first_pole_mid.append(float(first_pole[1] + first_pole[3])/2)
+		if debug == True:
+			cv2.circle(orig_img, (int(first_pole_mid[0]), int(first_pole_mid[1])), 3, (255,255,255), 4)
+
+		# calculate center of second_pole
+		second_pole_mid = []
+		second_pole_mid.append(float(second_pole[0] + second_pole[2])/2)
+		second_pole_mid.append(float(second_pole[1] + second_pole[3])/2)
+		if debug == True:
+			cv2.circle(orig_img, (int(second_pole_mid[0]), int(second_pole_mid[1])), 3, (255,255,255), 4)
+
+		# make line through first_pole_mid and second_pole_mid
+		x_mid_line = []
+		x_mid_line.append(first_pole_mid[0])
+		x_mid_line.append(first_pole_mid[1])
+		x_mid_line.append(second_pole_mid[0])
+		x_mid_line.append(second_pole_mid[1])
+
+		if debug == True:
+			cv2.line(orig_img, (int(x_mid_line[0]),int(x_mid_line[1])),(int(x_mid_line[2]),int(x_mid_line[3])),(177,237,157),2) # some lime green color
+
+		# find verticle center of gate
+		hor_mid = []
+
+		# find center between poles
+		if horizontal != []:
+			hor_mid.append(float(ext1[0] + ext2[0])/2)
+			hor_mid.append(float(ext1[1] + ext2[1])/2)
+		elif synth_horizontal != []:
+			hor_mid.append(float(synth_horizontal[0] + synth_horizontal[2])/2)
+			hor_mid.append(float(synth_horizontal[1] + synth_horizontal[3])/2)
+
+		# create line
+		if horizontal != []:
+			hor_slope = find_slope_singleline(horizontal)
+		elif synth_horizontal != []:
+			hor_slope = find_slope_singleline(synth_horizontal)
+		
+		temp_coord = []
+		temp_coord_b = hor_mid[1]-hor_slope*hor_mid[0]
+		temp_coord_x = hor_mid[0] + 1
+		# I need to fix this line so it is perpendicular to horizontal bar. Right now, it goes straight now which is good enough
+		temp_coord_y = temp_coord_x * (-1/hor_slope) + temp_coord_b # math.sqrt(3**2/(hor_slope**2+1))
+		temp_coord.append(temp_coord_x)
+		temp_coord.append(temp_coord_y)
+
+		hor_mid.append(temp_coord_x)
+		hor_mid.append(temp_coord_y)
+
+		if debug == True:
+			cv2.line(orig_img, (int(hor_mid[0]),int(hor_mid[1])),(int(hor_mid[2]),int(hor_mid[3])),(177,237,157),2) # some lime green color
+
+
+		# calculate center of gate (from new lines)
+		center = line_intersection(x_mid_line, hor_mid)
+
+		cv2.circle(orig_img, (int(center[0]), int(center[1])), 3, (255,255,255), 4)
+
+	print(orig_img)
+	print(ext_percent)
+	print(first_pole)
+	print(second_pole)
+	print(center)
+	return(orig_img, ext_percent, first_pole, second_pole, center)
 
 
 def confidence(x1_list, y1_list, x2_list, y2_list, refined_slopes, first_pole, second_pole, ext_percent):
@@ -456,7 +526,8 @@ if horizontal != []:
 
 cv2.imshow("rough detection", orig_img)
 """
-final, ext_percent, first_pole, second_pole = touch_up(first_pole, second_pole, horizontal, orig_img, confidence, debug)
+final, ext_percent, first_pole, second_pole, center = touch_up(first_pole, second_pole, horizontal, orig_img, confidence, debug)
+
 
 # add lines to image # FIS THIS NEW IMG VARIABLE
 if first_pole != []:
