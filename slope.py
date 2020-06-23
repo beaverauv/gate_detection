@@ -42,7 +42,7 @@ def elim_from_slope(slopes, x1_list, y1_list, x2_list, y2_list, debug):
 
     return(slopes, x1_list, y1_list, x2_list, y2_list)
 
-def line_intersection(one_list, two_list):
+def line_intersection(one_list, two_list, debug):
     intersect = [] # at the end it should be (x,y)
     # calculate slopes
     one_slope = find_slope_singleline(one_list)
@@ -64,13 +64,14 @@ def line_intersection(one_list, two_list):
     x_intersect = (two_b - one_b) / sum_slope
     y_intersect = (two_slope * x_intersect) + two_b
 
-    print("one_slope:" + str(one_slope))
-    print("two_slope:" + str(two_slope))
-    print("one_b:" + str(one_b))
-    print("two_b:" + str(two_b))
-    print("sum_slope:" + str(sum_slope))
-    print("x_intersect:" + str(x_intersect))
-    print("y_intersect:" + str(y_intersect))
+    if debug == True:
+        print("one_slope:" + str(one_slope))
+        print("two_slope:" + str(two_slope))
+        print("one_b:" + str(one_b))
+        print("two_b:" + str(two_b))
+        print("sum_slope:" + str(sum_slope))
+        print("x_intersect:" + str(x_intersect))
+        print("y_intersect:" + str(y_intersect))
 
     x_intersect = int(x_intersect)
     y_intersect = int(y_intersect)
@@ -89,3 +90,11 @@ def line_length(line): # line must be list of four elements: x1/y1/x2/y2
     length = np.sqrt(np.square(x_val) + np.square(y_val))
 
     return(length)
+
+def slope_to_rad(slope):
+    rad = np.arctan(slope)
+    return(rad)
+
+def rad_to_slope(rad):
+    slope = np.tan(rad)
+    return(slope)
