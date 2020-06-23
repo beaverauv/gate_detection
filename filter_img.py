@@ -1,5 +1,5 @@
 import cv2
-import matplotlib.pyplot as plt
+#import matplotlib.pyplot as plt
 
 # **NOT USING FIRST FUNCTION**
 def plot_gray(input_image, output_image):  
@@ -24,15 +24,23 @@ def filter_img(img_path, debug):
     img = cv2.imread(img_path)
     # grayscale image is used for equalization
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+
+
     # following function performs equalization on input image
-    
     #equ = cv2.Canny(gray)
     equ = cv2.equalizeHist(gray)
     #cv2.imshow("end", equ)
 
-    #cv2.waitKey(0)
-    #cv2.destroyAllWindows()
     return(equ, img)
+
+    """
+
+    #clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(900,900))
+    #equ = clahe.apply(gray)
+    #cv2.imshow("clahe", equ)
+    #equ = cv2.Canny(gray, 127, 255)
+
+    """
     
 if __name__ == '__main__':
     main()
